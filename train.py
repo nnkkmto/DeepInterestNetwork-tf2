@@ -50,20 +50,20 @@ def build_tf_dataset(dataset_dict: dict, seq_max_len: int, category_cols, behavi
 def main():
     seq_max_len = 100
 
-    # load data
+    print('load data')
     filepath = 'data/unpacked/data.tsv'
     use_columns = ['user_id', 'order_number', 'add_to_cart_order', 'order_dow', 'order_hour_of_day',
                    'days_since_prior_order', 'product_name', 'aisle', 'department']
     df = data_handler.load_tsv(filepath, use_columns)
 
-    # encode
+    print('encode')
     encode_cols = ['user_id', 'product_name', 'aisle', 'department', 'order_dow',
                    'order_hour_of_day', 'days_since_prior_order']
     df, ordinal_encoders = preprocesser.token_col_encode(df, encode_cols)
 
-    # make dataset
+    print('make dataset')
     user_col = 'user_id'
-    behavior_key_col = 'product_id'
+    behavior_key_col = 'product_name'
     behavior_category_cols = ['aisle', 'department']
     sort_cols = ['order_number', 'add_to_cart_order']
     context_cols = ['order_dow', 'order_hour_of_day', 'days_since_prior_order']
@@ -73,26 +73,26 @@ def main():
                                                    seq_max_len=seq_max_len,
                                                    user_category_cols=None, context_cols=context_cols)
 
-    # get counts
-    behavior_cols = ['product_id', 'aisle', 'department']
+    print('get counts')
+    behavior_cols = ['product_name', 'aisle', 'department']
     category_cols = ['user_id', 'order_dow', 'order_hour_of_day', 'days_since_prior_order']
     unique_counts = get_unique_counts(ordinal_encoders, behavior_cols+category_cols)
 
-    # build feature info
+    print('build feature info')
     features_info = build_features_info(unique_counts, behavior_cols, category_cols)
 
-    # build dataset
+    print('build dataset')
     inputs, output = build_tf_dataset(dataset_dict, seq_max_len, category_cols, behavior_cols)
 
-    # build model
+    print('build model')
     model = deep_interest_network(features_info, seq_max_len=seq_max_len)
 
-    # optimizer
+    print('optimizer')
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.01, decay=0.9)
     model.compile(
         optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
 
-    model.fit(x=inputs, y=output, epochs=30, validation_split=0.2, batch_size=10000)
+    model.fit(x=inputs, y=output, epochs=10, validation_split=0.2, batch_size=10000)
 
 
 if __name__ == '__main__':
